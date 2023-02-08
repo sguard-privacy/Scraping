@@ -12,7 +12,7 @@ def scrap_listing():
     
 # if url.status_code == 200:
         
-if __name__ == '__cars__':
+if __name__ == '__main__':
     
     for i in range (1,9):
         body = scrap_listing(brand="AUDI", year_min="2010", year_max="2020", km_min="0", km_max="200000", energy="ess", price_min="1000", price_max="150000")
