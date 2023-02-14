@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-brand = "PEUGEOT"
+brand = "AUDI"
 year_max = 2020
 year_min = 2010
 km_max = 100000
@@ -35,5 +35,5 @@ if __name__ == "__main__":
             characteristics_km = characteristics[1]
             characteristics_fuel = characteristics[3]
             print(brand_.text, motor.text, "année:", characteristics_year.text, characteristics_km.text, "carburant:", characteristics_fuel.text, "prix:", price.text)
-
+            
 
