@@ -1,61 +1,60 @@
 from bs4 import BeautifulSoup
 import requests
-import mechanize
 import csv
 
-brand = "AUDI"
-year_min = 2010
-year_max = 2019
-power_min = 350
-energy = "ess"
 
-# Créer un navigateur
-browser = mechanize.Browser()
+def format_url(page):
+    brand = "AUDI"
+    year_min = 2010
+    year_max = 2019
+    power_min = 350
+    energy = ""
+    url = """https://www.lacentrale.fr/listing?energies={energy}&makesModelsCommercialNames={brand}&powerDINMin={power_min}&yearMax={year_max}&yearMin={year_min}&options=&page={page}""".format(
+    brand=brand, energy=energy, power_min=power_min, year_min=year_min, year_max=year_max, page=page)
+    return url
 
-# browser.set_handle_redirect(True)
 
-# browser.set_cookiejar(requests.cookies.RequestsCookieJar())
+def main():
 
-browser.set_handle_robots(False)
-
-def get_annonce_data(brand, year_min, year_max, power_min, energy):
-    url = "https://www.lacentrale.fr/listing?energies={energy}&makesModelsCommercialNames={brand}&powerDINMin={power_min}&yearMax={year_max}&yearMin={year_min}".format(
-        brand=brand, energy=energy, power_min=power_min, year_min=year_min, year_max=year_max
-    )
-    response = browser.open(url)
-
-    soup = BeautifulSoup(response.read(), 'html.parser')
-    searchCard_elements = soup.find_all(class_='searchCard')   
     data = []
 
-    for annonce in searchCard_elements:
-        marque = annonce.find("h3").text
-        modele = annonce.find(class_="Text_Text_text Vehiculecard_Vehiculecard_subTitle Text_Text_body2").text
-        annee = annonce.find(class_="Text_Text_text Vehiculecard_Vehiculecard_characteristicsItems Text_Text_body2").text
-        prix = annonce.find(class_="Text_Text_text Vehiculecard_Vehiculecard_priceContainer Text_Text_body3").text
-        motor = annonce.find(class_="Text_Text_text Vehiculecard_Vehiculecard_subTitle Text_Text_body2").text
-        data.append({
-            "marque": marque,
-            "modele": modele,
-            "annee": annee,
-            "prix": prix,
-            "motor": motor,
-        })
-        print(marque, modele, annee, "Prix :", prix, motor, '\n')
+    for page in range(1, 9):
+        url = format_url(page)
 
-    return data
+        response = requests.get(url)
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        searchCard_elements = soup.find_all(class_='searchCard')
+
+        for result in searchCard_elements:
+            brand_and_model = result.find("h3").text
+            brand, model = brand_and_model.split(maxsplit=1)
+            year = result.find(
+                class_="Text_Text_text Vehiculecard_Vehiculecard_characteristicsItems Text_Text_body2").text
+            price = result.find(
+                class_="Text_Text_text Vehiculecard_Vehiculecard_priceContainer Text_Text_body3").text
+            motor = result.find(
+                class_="Text_Text_text Vehiculecard_Vehiculecard_subTitle Text_Text_body2").text
+            fuel = result.find_all(
+                class_="Text_Text_text Vehiculecard_Vehiculecard_characteristicsItems Text_Text_body2", )[3].text
+            mileage = result.find_all(
+                class_="Text_Text_text Vehiculecard_Vehiculecard_characteristicsItems Text_Text_body2")[1]
+
+            if result:
+                print("Marque :", brand, "Modèle  :", model, "Année :", year, '\n',
+                      "Prix :", price, '\n', "Moteur :", motor, '\n' "Fuel :", fuel, '\n', "Mileage :", mileage.text,)
+
+                data.append([brand, model, year, price, motor, fuel, mileage.text])
+
+    with open("audi.csv", "a", newline="") as fd:
+        writer = csv.writer(fd)
+        writer.writerow(
+            ["Marque", "Modèle", "Année", "Prix", "Moteur", "Fuel", "Mileage"])
+        for row in data:
+            writer.writerow(row)
 
 
-# Récupérer les données des annonces
-try:
-    data = get_annonce_data(brand, year_min, year_max, power_min, energy)
-except ValueError as e:
-    print(e)
-    exit()
+if __name__ == "__main__":
+    main()
 
-# Écrire les données dans un fichier CSV
-with open("audi.csv", "w", newline="") as fd:
-    writer = csv.writer(fd)
-    writer.writerow(["Marque", "Modèle", "Année", "Prix", "Motor"])
-    for row in data:
-        writer.writerow(row)
